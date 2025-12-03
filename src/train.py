@@ -5,10 +5,10 @@ import os
 from tqdm import tqdm
 import numpy as np
 
-from src.data.loader import get_loader
-from src.models.dyt import DyTTransformer
-from src.models.tft import TFTBaseline
-from src.models.loss import FocalBCELoss
+from data.loader import get_loader
+from models.dyt import DyTTransformer
+from models.tft import TFTBaseline
+from models.loss import FocalBCELoss
 
 def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

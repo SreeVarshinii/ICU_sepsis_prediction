@@ -6,9 +6,9 @@ from tqdm import tqdm
 import os
 import pandas as pd
 
-from src.data.loader import get_loader
-from src.models.dyt import DyTTransformer
-from src.models.tft import TFTBaseline
+from data.loader import get_loader
+from models.dyt import DyTTransformer
+from models.tft import TFTBaseline
 
 def evaluate(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -41,14 +41,14 @@ def evaluate(args):
             logits, _ = model(features, time_gaps, mask)
             probs = torch.sigmoid(logits)
             
-            all_targets.append(labels.cpu().numpy())
-            all_probs.append(probs.cpu().numpy())
-            all_masks.append(mask.cpu().numpy())
+            all_targets.append(labels.cpu().numpy().flatten())
+            all_probs.append(probs.cpu().numpy().flatten())
+            all_masks.append(mask.cpu().numpy().flatten())
             
     # Flatten
-    all_targets = np.concatenate(all_targets).flatten()
-    all_probs = np.concatenate(all_probs).flatten()
-    all_masks = np.concatenate(all_masks).flatten()
+    all_targets = np.concatenate(all_targets)
+    all_probs = np.concatenate(all_probs)
+    all_masks = np.concatenate(all_masks)
     
     # Filter masked values
     valid_indices = all_masks == 1
