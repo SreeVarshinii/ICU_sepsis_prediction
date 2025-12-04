@@ -16,7 +16,11 @@ class TFTBaseline(nn.Module):
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         
         self.classifier = nn.Linear(d_model, 1)
-        self.forecaster = nn.Linear(d_model, input_dim)
+        
+        # Forecasting Head
+        self.num_forecast_targets = 4
+        self.forecast_horizon = 3
+        self.forecaster = nn.Linear(d_model, self.num_forecast_targets * self.forecast_horizon)
 
     def forward(self, x, time_gaps=None, mask=None):
         # x: [Batch, Seq, Dim]

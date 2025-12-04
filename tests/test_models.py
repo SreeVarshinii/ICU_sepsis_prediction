@@ -23,14 +23,15 @@ def test_models():
     logits, forecast = model_dyt(x, time_gaps, mask)
     print(f"DyT Output Shapes: Logits {logits.shape}, Forecast {forecast.shape}")
     assert logits.shape == (batch_size, seq_len)
-    assert forecast.shape == (batch_size, seq_len, input_dim)
+    # Forecast shape: 4 targets * 3 horizon = 12
+    assert forecast.shape == (batch_size, seq_len, 12)
     
     print("Testing TFT Baseline...")
     model_tft = TFTBaseline(input_dim=input_dim)
     logits, forecast = model_tft(x) # TFT ignores time_gaps in this baseline
     print(f"TFT Output Shapes: Logits {logits.shape}, Forecast {forecast.shape}")
     assert logits.shape == (batch_size, seq_len)
-    assert forecast.shape == (batch_size, seq_len, input_dim)
+    assert forecast.shape == (batch_size, seq_len, 12)
     
     print("Testing Focal Loss...")
     criterion = FocalBCELoss()
