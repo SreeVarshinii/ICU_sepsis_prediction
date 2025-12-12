@@ -18,13 +18,17 @@ We propose the **Dynamic Transformer (DyT)**, a novel neural network architectur
 
 ## 3. Tools and Technologies Used
 
-*   **Core Framework**: Python, PyTorch
-*   **Data Processing**: Pandas, NumPy
-*   **Evaluation**: Scikit-learn (AUROC, AUPRC)
-*   **Visualization & Demos**:
-    *   **Streamlit**: For the interactive web dashboard.
-    *   **Rich/ANSI**: For the real-time CLI monitor.
-    *   **Matplotlib/Seaborn**: For static plotting and analysis.
+### Core Frameworks
+*   **Python**: Chosen for its dominance in Data Science and extensive library ecosystem.
+*   **PyTorch**: Selected over TensorFlow for its dynamic computation graph, which simplifies the implementation of complex custom layers like **Temporal Attention** and **Dynamic Tanh**.
+
+### Data Processing
+*   **Pandas & NumPy**: Essential for efficient manipulation of the structured tabular data.
+*   **PyArrow (Parquet)**: Used for data storage. Parquet is a columnar format that provides significantly faster I/O and smaller file sizes compared to CSV, which is crucial when handling millions of ICU time steps.
+
+### Visualization & Deployment
+*   **Streamlit**: Chosen for the **Interactive Dashboard** because it allows for the rapid conversion of Python scripts into web apps without needing HTML/CSS/JS expertise. It natively supports PyTorch tensors and Matplotlib figures.
+*   **Rich**: Used for the **CLI Monitor** to provide beautiful, readable terminal output with color-coded alerts, simulating a real-time backend log.
 
 ## 4. Architecture Diagram
 
@@ -56,21 +60,36 @@ graph LR
 
 ## 5. Live Demo
 
-To demonstrate the functionality and performance of the system, we have developed three distinct modules:
+To demonstrate the system's capability in a realistic setting, we present a **Real-time Sepsis Monitoring Suite**.
 
-1.  **Interactive Patient Dashboard (Streamlit)**:
-    *   A web-based interface for clinicians to review patient history.
-    *   Visualizes the **Risk Trajectory** alongside key vitals (Heart Rate, BP).
-    *   Highlights the "Early Warning" period before clinical onset.
+### 5.1. Demo Components
 
-2.  **Real-time ICU Monitor (CLI)**:
-    *   A simulation of a bedside monitor.
-    *   Streams patient data in real-time.
-    *   Triggers **ALERTS** when the predicted risk crosses a critical threshold.
+1.  **Clinician Dashboard (Streamlit)**:
+    *   **Target Audience**: Doctors and Nurses.
+    *   **Function**: Provides a visual history of the patient's vitals and the model's predicted risk trajectory.
+    *   **Key Feature**: "Risk Forecast" — showing not just the current risk, but the trend over the last 12 hours.
 
-3.  **Comparative Notebook**:
-    *   A technical deep-dive comparing DyT against the TFT baseline.
-    *   Showcases specific patient cases where DyT successfully predicts sepsis while the baseline fails.
+2.  **Backend Monitor (CLI)**:
+    *   **Target Audience**: System Administrators / Central Monitoring Unit.
+    *   **Function**: Simulates the processing of a live data stream from bedside monitors.
+    *   **Key Feature**: Low-latency inference logging and color-coded **ALERTS** when risk exceeds 50%.
+
+### 5.2. Real-time Operation Workflow
+
+1.  **Data Streaming**: The system reads patient data sequentially, simulating a live feed where one hour of data arrives at a time.
+2.  **Preprocessing**:
+    *   The new data point is standardized using pre-computed hospital statistics.
+    *   Missing values are masked, and the time-gap since the last observation is calculated.
+3.  **Inference**:
+    *   The **DyT Transformer** processes the updated sequence (history + new point).
+    *   It outputs a **Sepsis Risk Score** (0-1) and a **Forecast** for the next 3 hours of vitals.
+4.  **Decision**:
+    *   If Risk > 0.5: Trigger **HIGH RISK ALERT**.
+    *   If Risk > 0.2: Trigger **WARNING**.
+    *   Otherwise: Status **STABLE**.
+
+### 5.3. Demo Screenshot
+*(Placeholder: Dashboard Screenshot will be inserted here)*
 
 ## 6. Evaluation
 
