@@ -24,6 +24,12 @@ def train(args):
     input_dim = sample_batch[0].shape[-1]
     print(f"Input Dimension: {input_dim}")
     
+    # Forecasting Config
+    TARGET_INDICES = [0, 1, 4, 6] # HR, O2Sat, MAP, Resp
+    # Mask indices are offset by 10 (10 features)
+    MASK_INDICES = [x + 10 for x in TARGET_INDICES]
+    HORIZON = 3
+    
     # Initialize Model
     if args.model == 'dyt':
         model = DyTTransformer(input_dim=input_dim, d_model=args.d_model, n_heads=args.n_heads, num_layers=args.num_layers).to(device)
@@ -35,7 +41,7 @@ def train(args):
     # Optimizer & Loss
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     criterion_cls = FocalBCELoss()
-    criterion_reg = torch.nn.MSELoss()
+    criterion_reg = torch.nn.MSELoss(reduction='none') # Element-wise for masking
     
     best_val_loss = float('inf')
     
@@ -54,24 +60,44 @@ def train(args):
             
             # Classification Loss (Masked)
             loss_cls = criterion_cls(logits, labels)
-            loss_cls = (loss_cls * mask).sum() / mask.sum()
+            loss_cls = (loss_cls * mask).sum() / (mask.sum() + 1e-8)
             
-            # Forecasting Loss (Predict next step features)
-            # Target is features shifted by 1 (simplified)
-            # Or usually specific targets like HR, MAP. Here we predict all features.
-            # Shift features: target at t is features at t+1
-            # We can't predict t+1 for the last step.
-            target_forecast = features[:, 1:, :]
-            pred_forecast = forecast[:, :-1, :]
-            mask_forecast = mask[:, :-1].unsqueeze(-1)
+            # Forecasting Loss
+            # Construct Targets
+            target_list = []
+            mask_list = []
+            batch_size, seq_len, _ = features.shape
             
-            loss_reg = criterion_reg(pred_forecast, target_forecast)
-            # Masking for regression is tricky with MSELoss reduction='mean'.
-            # Let's do elementwise
-            loss_reg = (loss_reg * mask_forecast).sum() / mask_forecast.sum()
+            for k in range(1, HORIZON + 1):
+                # Shift features: Target at t is value at t+k
+                if k < seq_len:
+                    val_k = features[:, k:, TARGET_INDICES] # [B, L-k, 4]
+                    pad_val = torch.zeros(batch_size, k, 4).to(device)
+                    val_k = torch.cat([val_k, pad_val], dim=1)
+                    
+                    m_k = features[:, k:, MASK_INDICES] # [B, L-k, 4]
+                    pad_m = torch.zeros(batch_size, k, 4).to(device)
+                    m_k = torch.cat([m_k, pad_m], dim=1)
+                else:
+                    # Sequence too short for horizon
+                    val_k = torch.zeros(batch_size, seq_len, 4).to(device)
+                    m_k = torch.zeros(batch_size, seq_len, 4).to(device)
+
+                target_list.append(val_k)
+                
+                # Combine with sequence mask (if current t is padding, don't train)
+                seq_mask_expanded = mask.unsqueeze(-1) # [B, L, 1]
+                m_k = m_k * seq_mask_expanded
+                mask_list.append(m_k)
+            
+            target_forecast = torch.cat(target_list, dim=-1) # [B, L, 12]
+            mask_forecast = torch.cat(mask_list, dim=-1) # [B, L, 12]
+            
+            loss_reg = criterion_reg(forecast, target_forecast)
+            loss_reg = (loss_reg * mask_forecast).sum() / (mask_forecast.sum() + 1e-8)
             
             # Total Loss
-            loss = loss_cls + 0.1 * loss_reg # Weight forecasting less
+            loss = loss_cls + 0.5 * loss_reg # Increase weight for forecasting
             
             loss.backward()
             optimizer.step()
@@ -92,7 +118,7 @@ def train(args):
                 logits, forecast = model(features, time_gaps, mask)
                 
                 loss_cls = criterion_cls(logits, labels)
-                loss_cls = (loss_cls * mask).sum() / mask.sum()
+                loss_cls = (loss_cls * mask).sum() / (mask.sum() + 1e-8)
                 
                 val_loss += loss_cls.item() # Monitor classification loss primarily
                 

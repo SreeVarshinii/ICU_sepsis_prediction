@@ -40,4 +40,9 @@ The baseline is a standard Transformer Encoder architecture.
     -   Features include: Standardized Vitals/Labs + Missingness Masks + Time Deltas.
 -   **Outputs**:
     1.  **Classification**: Sepsis Risk Score (0-1) at each time step.
-    2.  **Forecasting**: Predicted values for the next time step (Auxiliary task).
+    2.  **Forecasting**: Multi-step prediction (Next 1, 2, and 3 hours) for 4 key vitals:
+        -   Heart Rate (HR)
+        -   Oxygen Saturation (O2Sat)
+        -   Mean Arterial Pressure (MAP)
+        -   Respiration Rate (Resp)
+        -   *Total Output Dimension*: 12 (4 vars $\times$ 3 steps).

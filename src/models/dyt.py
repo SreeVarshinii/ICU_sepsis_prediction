@@ -22,7 +22,12 @@ class DyTTransformer(nn.Module):
         
         # Heads
         self.classifier = nn.Linear(d_model, 1) # Sepsis Risk
-        self.forecaster = nn.Linear(d_model, input_dim) # Predict next step (simplified)
+        
+        # Forecasting Head
+        # Predict 4 vitals (HR, O2Sat, MAP, Resp) for next 3 steps
+        self.num_forecast_targets = 4
+        self.forecast_horizon = 3
+        self.forecaster = nn.Linear(d_model, self.num_forecast_targets * self.forecast_horizon)
 
     def forward(self, x, time_gaps, mask=None):
         # x: [Batch, Seq, Dim]
