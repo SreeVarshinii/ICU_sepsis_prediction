@@ -49,8 +49,9 @@ with tab1:
     
     with col_conf:
         st.subheader("Configuration")
-        model_path = st.text_input("Model Checkpoint", "models/test_run/dyt_best.pth", key="dash_model")
-        data_path = st.text_input("Test Data Path", "data/processed_splits/test.parquet", key="dash_data")
+        # Hardcoded paths content for deployment simplicity
+        model_path = "models/test_run/dyt_best.pth"
+        data_path = "data/processed_splits/test.parquet"
         
         if os.path.exists(data_path):
             df = load_data(data_path)
