@@ -1,31 +1,82 @@
-# Early Sepsis Prediction with Dynamic Tanh (DyT) Transformer
+# Early Sepsis Prediction with a Dynamic Tanh (DyT) Transformer
 
-This repository contains the implementation of a deep learning framework for the early prediction of Sepsis in ICU patients using the PhysioNet 2019 Challenge dataset. 
+🔗 **Live Demo (Streamlit Dashboard):**  
+👉 https://icu-sepsisprediction-monitoring.streamlit.app/
 
-We propose a novel **Dynamic Tanh (DyT) Transformer** designed to handle the irregularity and non-stationarity of ICU time-series data. It outperforms standard baselines by dynamically adapting normalization statistics and explicitly modeling time gaps.
+---
 
-## 🚀 Key Features
+## Abstract
+Early detection of sepsis in Intensive Care Units (ICUs) is challenging due to irregular sampling, missing data, and non-stationary physiological signals. We propose a **Dynamic Tanh (DyT) Transformer**, a novel Transformer-based architecture that replaces Layer Normalization with an adaptive, input-dependent normalization scheme and incorporates time-aware self-attention. Evaluated on the **PhysioNet 2019 Sepsis Challenge** dataset, the DyT Transformer substantially outperforms a standard Transformer baseline, achieving higher discrimination and precision under extreme class imbalance.
 
-*   **Dynamic Tanh (DyT) Normalization**: Adapts to sudden physiological shifts (e.g., shock onset) using a learnable, input-dependent activation.
-*   **Temporal Attention**: A modified Self-Attention mechanism that accounts for variable time intervals between observations.
-*   **Multi-Task Learning**: Simultaneously predicts **Sepsis Risk** (Classification) and forecasts **Future Vitals** (Regression) for the next 3 hours.
-*   **Real-time Monitoring Suite**: Includes a unified Streamlit dashboard for retrospective analysis, real-time simulation, and model comparison.
+---
 
-## 📊 Results
+## Model Overview
+We compare two architectures:
 
-The model was evaluated on a held-out test set using hospital-based cross-validation.
+- **DyT Transformer (Proposed)**  
+  Incorporates Dynamic Tanh normalization, temporal attention, and missingness-aware embeddings.
+- **TFT Baseline**  
+  Standard Transformer encoder using LayerNorm and conventional self-attention.
+
+---
+
+## Methodology
+
+### Dynamic Tanh (DyT) Normalization
+DyT replaces LayerNorm with an adaptive nonlinear normalization:
+$$
+y = \gamma \cdot \tanh\left(\alpha \cdot \frac{x - \mu}{\sigma}\right) + \beta
+$$
+where $\alpha$ and $\beta$ are dynamically learned from input statistics.  
+This allows the model to preserve clinically important spikes while remaining stable under distribution shifts.
+
+### Temporal Attention
+To model irregular time intervals, time-gap embeddings are injected into the attention mechanism:
+$$
+Q = W_q(x + \text{TimeEmb}(\Delta t)), \quad
+K = W_k(x + \text{TimeEmb}(\Delta t))
+$$
+This enables attention weights to depend explicitly on elapsed time between observations.
+
+### Missingness-Aware Inputs
+Observed values are concatenated with binary masks, allowing the model to distinguish between measured and imputed data.
+
+### Loss Function
+A **Focal Binary Cross-Entropy Loss** is used to address extreme class imbalance (~1.8% positive sepsis cases), emphasizing hard positive examples.
+
+---
+
+## Input & Output
+- **Input:** ICU time-series of shape `[Batch, Sequence Length, Features]`, including vitals, labs, missingness masks, and time deltas.
+- **Output:**  
+  - Sepsis risk probability at each time step (classification)  
+  - Auxiliary next-step vital sign forecasting (multi-task learning)
+
+---
+
+## Results
 
 | Model | AUROC | AUPRC |
-| :--- | :--- | :--- |
+|------|------|------|
 | **DyT Transformer (Proposed)** | **0.9024** | **0.1837** |
 | TFT Baseline (LayerNorm) | 0.7001 | 0.0571 |
 
-**Analysis**: DyT achieves significantly higher discrimination (AUROC) and precision (AUPRC), validating the importance of dynamic scaling for this task.
+**Interpretation:** Dynamic normalization and temporal modeling substantially improve both discrimination and precision for early sepsis detection.
 
 ### Performance Plots
 | ROC Curve | PR Curve |
 | :---: | :---: |
 | ![ROC](results/roc_comparison.png) | ![PRC](results/prc_comparison.png) |
+
+---
+
+## Implementation
+- **Framework**: PyTorch  
+- **Dataset**: PhysioNet 2019 Sepsis Challenge  
+- **Evaluation**: Hospital-based cross-validation  
+- **Visualization**: Streamlit-based real-time monitoring dashboard
+
+---
 
 ## 🛠️ Installation
 
@@ -73,12 +124,12 @@ python src/compare.py --results_dir results
 ```
 
 ### 4. Live Demo & Dashboard
-**[🚀 Click Here to Try the Live App](https://icu-sepsisprediction-monitoring.streamlit.app/)**
-
 Launch the unified web interface containing the Patient Dashboard and Real-time Monitor locally:
 ```bash
 streamlit run demos/dashboard/app.py
 ```
+
+---
 
 ## 📂 Project Structure
 
@@ -101,5 +152,8 @@ Sepsis pred/
 └── tests/                  # Unit Tests
 ```
 
-## 📜 License
-This project is open-source. Please attribute the PhysioNet 2019 Challenge for the dataset.
+---
+
+## License
+Open-source research code.  
+Please cite the **PhysioNet 2019 Sepsis Challenge** dataset when using this repository.
