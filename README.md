@@ -24,18 +24,18 @@ We compare two architectures:
 
 ### Dynamic Tanh (DyT) Normalization
 DyT replaces LayerNorm with an adaptive nonlinear normalization:
-$$
+```math
 y = \gamma \cdot \tanh\left(\alpha \cdot \frac{x - \mu}{\sigma}\right) + \beta
-$$
+```
 where $\alpha$ and $\beta$ are dynamically learned from input statistics.  
 This allows the model to preserve clinically important spikes while remaining stable under distribution shifts.
 
 ### Temporal Attention
 To model irregular time intervals, time-gap embeddings are injected into the attention mechanism:
-$$
+```math
 Q = W_q(x + \text{TimeEmb}(\Delta t)), \quad
 K = W_k(x + \text{TimeEmb}(\Delta t))
-$$
+```
 This enables attention weights to depend explicitly on elapsed time between observations.
 
 ### Missingness-Aware Inputs
